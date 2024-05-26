@@ -3,9 +3,10 @@ from constranst import theme
 from components.menu import menu
 
 def main(page: ft.Page):
+    bar = menu(page)
     page = theme(page)
     page.add(ft.Text('Welcome'))
-    page.add(menu())
+    page.add(bar[0])
     page.update()
     
 

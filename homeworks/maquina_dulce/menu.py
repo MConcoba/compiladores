@@ -5,10 +5,11 @@ from maquina_dulce.afd_dulce import get_lines
 code = None
 codigo_archivo = None
 def menu(page: ft.Page):
-    selected_files = ft.Text()
-
     def pick_files_result(e: ft.FilePickerResultEvent):
         global code, codigo_archivo
+        if codigo_archivo is not None:
+            page.remove(code)
+        
         with open(e.files[0].path, 'r', encoding='utf-8') as archivo:
             codigo_archivo = archivo.read()
         code = show_code(page, codigo_archivo, '', '', False, False, False)
@@ -31,7 +32,7 @@ def menu(page: ft.Page):
     menu =  ft.AppBar(
         leading=ft.Icon(ft.icons.CODE),
         leading_width=70,
-        title=ft.Text("Analizador Léxico "),
+        title=ft.Text("Maquina de dulces"),
         center_title=False,
         bgcolor=ft.colors.SURFACE_VARIANT,
         elevation=100,
