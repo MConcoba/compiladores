@@ -8,10 +8,16 @@ class SQLParser:
         self.contenido = "\n"
         self.listaErrores = {}
         self.cantidadLineas = 0
+        self.queries = 0
 
         self.cambiosRealizados = False
         self.direccionArchivo = None 
 
+    def limpiarVariables(self):
+        self.contenido = ""
+        self.errores = ""
+        self.listaErrores = {}
+        self.cantidadLineas = 0
     
     def abrirArchivo(self):
         direccionArchivo = filedialog.askopenfilename(filetypes=[("Archivos de texto", "*.txt"), ("Todos los archivos", "*.*")])
@@ -64,9 +70,13 @@ class SQLParser:
  
     def analizadorSintactico(self):
         consulta = self.separar_consultas_y_tokens(self.contenido)
-        print(consulta)
-        #is_valid, errores = parser.parse(tokens)
-
+        for i, q in enumerate(consulta, start=1):
+            self.queries = i
+            #print(q)
+            is_valid, errores = self.parse(q)
+            #print(is_valid)
+            #print(f"Es válido: {is_valid}")
+            #print(f"Errores: {errores}")
 
     
     def separar_consultas_y_tokens(self, script_sql):
@@ -79,32 +89,35 @@ class SQLParser:
             i = 0
             while i < len(tokens):
                 # Comprobar si el token actual y el siguiente son los que se deben fusionar
-                if i < len(tokens) - 1 and ' '.join(tokens[i:i+2]) in ['CREATE DATABASE', 'CREATE TABLE', 'INSERT INTO', 'DELETE FROM']:
-                    fusionados.append(''.join(tokens[i:i+2]))  # Unir los tokens sin espacio entre ellos
-                    i += 2
-                else:
-                    fusionados.append(tokens[i])
-                    i += 1
+                if i < len(tokens) - 1:
+                    combined_token = f"{tokens[i]} {tokens[i+1]}"
+                    if combined_token in ['CREATE DATABASE', 'CREATE TABLE', 'INSERT INTO', 'DELETE FROM']:
+                        #fusionados.append(combined_token)  # Unir los tokens con espacio entre ellos
+                        fusionados.append(tokens[i] + tokens[i+1])  # Unir los tokens sin espacio entre ellos
+
+                        i += 2
+                        continue
+                fusionados.append(tokens[i])
+                i += 1
             return fusionados
         
         # Función para separar tokens
         def tokenizar(consulta):
-            # Expresión regular para separar palabras, números y símbolos
-            pattern = re.compile(r"[\w']+|[.,!?;()]+")
+            # Expresión regular para separar palabras, números y símbolos, excluyendo espacios
+            pattern = re.compile(r"[\w']+|[.,!?;()=<>]+")
             return pattern.findall(consulta)
         
-        # Crear una lista de diccionarios con consultas y sus tokens
+        # Crear una lista de listas de tokens para cada consulta
         resultado = []
         for consulta in consultas:
             tokens = tokenizar(consulta)
             tokens = fusionar_tokens(tokens)
-            resultado.append({
-                'consulta': consulta,
-                'tokens': tokens
-            })
+            # Asegurarse de que cada lista de tokens termine con un ';'
+            if tokens and tokens[-1] != ';':
+                tokens.append(';')
+            resultado.append(tokens)
         
         return resultado
-
 
     def get_production(self, non_terminal, terminal):
         grammar = {
@@ -259,7 +272,7 @@ class SQLParser:
                 "assing_1": ["<Assignment>"]
             },
             "<Assignment>": {
-                "identificador": ["<nombre_COL>", "=", "<expr_update>"]
+                "assig": ["<nombre_COL>", "=", "<expr_update>"]
             },
             "<expr_update>": {
                 "identificador": ["<literal>", "<identifier>", "<variable>"]
@@ -344,8 +357,7 @@ class SQLParser:
     def parse(self, input_tokens):
         stack = ["<S>"]
         index = 0
-        self.listaErrores = {}  # Reiniciamos la lista de errores para cada llamada
-        lap_list = 0
+        #self.listaErrores = {}  # Reiniciamos la lista de errores para cada llamada
         while stack:
             top = stack.pop()
             if index < len(input_tokens):
@@ -355,13 +367,13 @@ class SQLParser:
                     index += 1
                 
                 elif self.is_non_terminal(top): 
-                    if top in ('<nombre_BD>', '<nombre_COL>', '<nombre_TBL>', '<table_references>', '<char_sequence>', '<nombre_FLD>', '<nombre_TBL_UPD>', '<variable>', '<identifier>', '<simple_expr>'):
+                    if top in ('<nombre_BD>', '<nombre_COL>', '<nombre_TBL>', '<table_references>', '<char_sequence>', '<nombre_FLD>', '<nombre_TBL_UPD>', '<variable>', '<identifier>', '<simple_expr>', '<expr_update>'):
                         id = self.validar_identificador(current_token)
-                        print(top, current_token)
                         if id == True:
+                            pass
                             index += 1
                         else:
-                            self.listaErrores[index] = f"1-Error de sintaxis: se encontró {current_token}, se esperaba {top}"
+                            self.listaErrores[self.queries] = f"1-Error de sintaxis: se encontró {current_token}, se esperaba {top}"
                     elif top in ('<Columnas_TBL>'):
                         start_idx, end_idx = input_tokens.index("("), input_tokens.index(")")
                         cols = input_tokens[start_idx + 1:end_idx]
@@ -387,14 +399,14 @@ class SQLParser:
                             if prod[0]: 
                                 stack = prod[1]
                             else:
-                                self.listaErrores[index] = prod[1]
+                                self.listaErrores[self.queries] = prod[1]
                                 break
                     elif top in ('<Columna_TBL>'):
                         prod = self._production(top, 'col_tbl')
                         if prod[0]: 
                             stack = prod[1]
                         else:
-                            self.listaErrores[index] = prod[1]
+                            self.listaErrores[self.queries] = prod[1]
                             break
                     elif top in ('<list_FLD>'):
                         start_idx, end_idx = input_tokens.index("SELECT"), input_tokens.index("FROM")
@@ -405,11 +417,13 @@ class SQLParser:
                             new_token = 'list_1'
                         elif len(cols) < 2:
                             new_token = 'list_1'
+                        else:
+                            new_token = 'list_1'
                         prod = self._production(top, new_token)
                         if prod[0]: 
                             stack = prod[1]
                         else:
-                            self.listaErrores[index] = prod[1]
+                            self.listaErrores[self.queries] = prod[1]
                             break
                     elif top in ('<lista_Columnas>'):
                         last_stack = stack
@@ -427,65 +441,78 @@ class SQLParser:
                             if(prod[1] == []):
                                 stack = last_stack
                         else:
-                            self.listaErrores[index] = prod[1]
+                            self.listaErrores[self.queries] = prod[1]
                             break
                     elif top in ('<assignment_list>'):
                             if('WHERE' in input_tokens):
                                 start_idx, end_idx = input_tokens.index("SET"), input_tokens.index("WHERE")
                                 cols = input_tokens[start_idx + 1:end_idx]
-                                if(len(cols) > 2 and (index != len(cols))) :
-                                    new_token = 'assing_n'
-                                elif (len(cols) > 2 and (index == len(cols))) :
-                                    new_token = 'assing_1'
-                                elif len(cols) < 2:
-                                    new_token = 'assing_1'
-                                prod = self._production(top, new_token)
-                                if prod[0]: 
-                                    index += len(cols)
-                                    if(prod[1] == []):
-                                        stack = last_stack
-                                else:
-                                    self.listaErrores[index] = prod[1]
-                                    break
+                                
+                                
+                                grupos = []
+                                current_group = []
+
+                                for item in cols:
+                                    if item == ',':
+                                        if current_group:
+                                            grupos.append(current_group)
+                                            current_group = []
+                                    else:
+                                        current_group.append(item)
+
+                                if current_group:
+                                    grupos.append(current_group)
+
+                                for gp in grupos:
+                                    new_token = 'assing_n' if len(gp) > 2 else  'assing_1'
+                                    prod = self._production(top, new_token)
+                                    #print(prod)
+                                    if prod[0]: 
+                                        stack = prod[1]
+                                    else:
+                                        self.listaErrores[self.queries] = prod[1]
+                                        break
                             else:
                                 print('noo')
-                   
+                    elif top in ('<Assignment>'):
+                        prod = self._production(top, 'assig')
+                        if prod[0]:
+                            stack = prod[1]
+                            #index -= 1
+                        else:
+                            self.listaErrores[self.queries] = prod[1]
+                            break
                     elif top in ('<condition>'):
                         if('WHERE' in input_tokens):
                             prod = self._production(top, 'boolean_primary')
                             if prod[0]: 
-                                print(prod[1])
                                 if(prod[1] == []):
                                     stack = last_stack
                                 else:
                                     stack = prod[1]
                             else:
-                                self.listaErrores[index] = prod[1]
+                                self.listaErrores[self.queries] = prod[1]
                                 break
                         else:
                             print('nou')
-
                     elif top in ('<boolean_primary>'):
                         if('WHERE' in input_tokens):
-                            print(current_token)
                             prod = self._production(top, 'COMPARISON_OPERATOR')
                             if prod[0]: 
-                                print(prod[1])
                                 if(prod[1] == []):
                                     stack = last_stack
                                 else:
                                     stack = prod[1]
                             else:
-                                self.listaErrores[index] = prod[1]
+                                self.listaErrores[self.queries] = prod[1]
                                 break
                         else:
                             print('nou')
-                    
                     elif top in ('<value_list>'):
                         last_stack = stack
-                        start_idx = len(tokens) - 1 - tokens[::-1].index("(")
-                        end_idx = len(tokens) - 1 - tokens[::-1].index(")")
-                        cols = tokens[start_idx + 1:end_idx]
+                        start_idx = len(input_tokens) - 1 - input_tokens[::-1].index("(")
+                        end_idx = len(input_tokens) - 1 - input_tokens[::-1].index(")")
+                        cols = input_tokens[start_idx + 1:end_idx]
                         if(len(cols) > 2 and (index != len(cols))) :
                             new_token = 'value_n'
                         elif (len(cols) > 2 and (index == len(cols))) :
@@ -498,9 +525,8 @@ class SQLParser:
                             if(prod[1] == []):
                                 stack = last_stack
                         else:
-                            self.listaErrores[index] = prod[1]
-                            break
-                        
+                            self.listaErrores[self.queries] = prod[1]
+                            break                       
                     elif top in ('<SPACE>'):
                         top = stack[-1]                
                     elif top in ('<data_type>'):
@@ -509,22 +535,21 @@ class SQLParser:
                         print('hres')
 
                     else:
-                        #(current_token)
                         prod = self._production(top, current_token)
                         if prod[0]: 
                             stack = prod[1]
                         else:
-                            self.listaErrores[index] = prod[1]
+                            self.listaErrores[self.queries] = prod[1]
                             break
                 else:
-                    self.listaErrores[index] = f"5-Error de sintaxis: se encontró {current_token}, se esperaba {top}"
+                    self.listaErrores[self.queries] = f"5-Error de sintaxis: se encontró {current_token}, se esperaba {top}"
                     break
             else:
                 if top != "<S>":
-                    self.listaErrores[index] = f"Error de sintaxis: entrada inesperada al final, se esperaba {top}"
+                    self.listaErrores[self.queries] = f"Error de sintaxis: entrada inesperada al final, se esperaba {top}"
                 break
             
-        #print(stack)
+        #print(self.listaErrores)
         return not bool(self.listaErrores), self.listaErrores
     
     def _production(self, top, token):
@@ -537,7 +562,6 @@ class SQLParser:
 
         else:
             return [False, f"2-Error de sintaxis: se encontró {token}, se esperaba {top}"]
-
 
     def is_identifier(self, token):
         # Verificar si el token es una secuencia de caracteres válida

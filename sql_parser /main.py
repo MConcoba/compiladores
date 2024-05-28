@@ -85,7 +85,9 @@ def enumerar2():
 
 def llenarTabla():
     tabla.delete(*tabla.get_children())
+    print(objetoAbrir.listaErrores)
     for clave, valor in objetoAbrir.listaErrores.items():
+        print(valor)
         tabla.insert("", "end", values=(clave,valor))
     EstadoExportar()
     objetoAbrir.listaErrores = {}

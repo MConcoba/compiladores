@@ -1,6 +1,6 @@
-CREATE DATABASE mi_base_de_datos;
+CREATE DATABASE mi_base_de_datos fas;
 CREATE TABLE empleados (
-    id SERIAL PRIMARY KEY,
+    id INT PRIMARY KEY,
     nombre VARCHAR(50),
     edad INT,
     puesto VARCHAR(50),
@@ -10,5 +10,5 @@ CREATE TABLE empleados (
 SELECT nombre, edad FROM empleados;
 SELECT * FROM empleados WHERE edad > 30;
 INSERT INTO empleados (nombre, edad, puesto) VALUES ('Juan Pérez', 28, 'Desarrollador');
-UPDATE empleados SET edad = 29 WHERE nombre = 'Juan Pérez';
+UPDATE empleados SET edad = 29 WHERE nombre = Juan;
 DELETE FROM empleados WHERE edad < 25;
