@@ -1,0 +1,14 @@
+CREATE DATABASE mi_base_de_datos;
+CREATE TABLE empleados (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50),
+    edad INT,
+    puesto VARCHAR(50),
+    salario DECIMAL(10, 2)
+);
+
+SELECT nombre, edad FROM empleados;
+SELECT * FROM empleados WHERE edad > 30;
+INSERT INTO empleados (nombre, edad, puesto) VALUES ('Juan Pérez', 28, 'Desarrollador');
+UPDATE empleados SET edad = 29 WHERE nombre = 'Juan Pérez';
+DELETE FROM empleados WHERE edad < 25;
