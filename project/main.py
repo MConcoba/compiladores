@@ -3,10 +3,13 @@ from constranst import theme
 from components.menu import menu
 
 def main(page: ft.Page):
-    bar = menu(page)
+
     page = theme(page)
-    page.add(ft.Text('Welcome'))
+    #page.add(ft.Text('Welcome'))
+    bar = menu(page)
     page.add(bar[0])
+    page.overlay.extend([bar[1]])
+        
     page.update()
     
 
