@@ -4,6 +4,21 @@ from controllers.sqlparser import analizadorSintactico
 code = None
 codigo_archivo = None
 
+dlg_modal = None
+
+def export():
+    return code.controls[0].controls[0].content.controls[0].value
+
+def pick_file(event, page):
+        global code, codigo_archivo
+        if codigo_archivo is not None:
+            page.remove(code)
+        
+        with open(event.files[0].path, 'r', encoding='utf-8') as archivo:
+            codigo_archivo = archivo.read()
+        code = show_code(page, codigo_archivo, 'null', True)
+        return code
+
 def detalle_row(page, row):
         text = 'Error:' if row['status'] == False else 'Mensaje:'
         dlg_modal = ft.AlertDialog(
@@ -30,26 +45,15 @@ def detalle_row(page, row):
         dlg_modal.open = True
         page.update()
 
-def pick_file(event, page):
-        global code, codigo_archivo
-        if codigo_archivo is not None:
-            page.remove(code)
-        
-        with open(event.files[0].path, 'r', encoding='utf-8') as archivo:
-            codigo_archivo = archivo.read()
-        code = show_code(page, codigo_archivo, 'null', True)
-        #print(code)
-        return code
-        page.add(code)
-
 def analize(page):
         global code, codigo_archivo
         if codigo_archivo is None:
             return
         else:
             page.remove(code)
-            parse = analizadorSintactico(codigo_archivo)
-            code = show_code(page, codigo_archivo, parse, False)
+            last = code.controls[0].controls[0].content.controls[0].value
+            parse = analizadorSintactico(last)
+            code = show_code(page, last, parse, False)
             #print(code)
             return code
 
@@ -98,7 +102,6 @@ def tbl_results(page: ft.page, res):
     )
         return div
 
-
 def square(page: ft.Page, code, res, edit, type):
     div = ft.Column(
         spacing=10,
@@ -116,7 +119,6 @@ def square(page: ft.Page, code, res, edit, type):
 
     return div
 
-dlg_modal = None
 def show_code(page: ft.Page, code, results, type):
     cl = square(page, code, results, False, 'code')
     c2 = square(page, code, results, False, 'res')

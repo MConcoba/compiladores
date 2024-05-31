@@ -9,6 +9,7 @@ def main(page: ft.Page):
     bar = menu(page)
     page.add(bar[0])
     page.overlay.extend([bar[1]])
+    page.overlay.extend([bar[2]])
         
     page.update()
     

@@ -2,18 +2,11 @@
 import re
 
 def analizadorSintactico( contenido):
-    #consulta = separar_consultas_y_tokens(contenido)
     results = []
     consulta = separar_consultas_y_tokens(contenido)
-    #print(consulta)
     for i, q in enumerate(consulta, start=1):
-        #print(q)
         res = parse(q, i)
         results.append(res)
-
-        #print(is_valid)
-        #print(f"Es válido: {is_valid}")
-        #print(f"Errores: {errores}")
     return results
 
 def separar_consultas_y_tokens( script_sql):
@@ -522,13 +515,11 @@ def parse(input_tokens, queries):
 def _production( top, token, tokens, query):
     stack = []
     production = get_production(top, token)
-    #print(top, token, production)
     if production: 
         stack.extend(reversed(production))
         return [True, stack]
 
     else:
-        #return [False, f"2-Error de sintaxis: se encontró {token}, se esperaba {top}"]
         return [False, {'query': query, 'token': tokens, 'menssage': f"1-Error de sintaxis: se encontró {token}, se esperaba {top}", 'status': False}]
 
 
