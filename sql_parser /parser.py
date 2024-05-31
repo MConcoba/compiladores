@@ -70,6 +70,7 @@ class SQLParser:
  
     def analizadorSintactico(self):
         consulta = self.separar_consultas_y_tokens(self.contenido)
+        #consulta = self.separar_consultas_y_tokens(contenido)
         for i, q in enumerate(consulta, start=1):
             self.queries = i
             #print(q)
@@ -409,22 +410,26 @@ class SQLParser:
                             self.listaErrores[self.queries] = prod[1]
                             break
                     elif top in ('<list_FLD>'):
-                        start_idx, end_idx = input_tokens.index("SELECT"), input_tokens.index("FROM")
-                        cols = input_tokens[start_idx + 1:end_idx]
-                        if(len(cols) > 2 and (index != len(cols))) :
-                            new_token = 'list_n'
-                        elif (len(cols) > 2 and (index == len(cols))) :
-                            new_token = 'list_1'
-                        elif len(cols) < 2:
-                            new_token = 'list_1'
+                        if('FROM' in input_tokens):
+
+                            start_idx, end_idx = input_tokens.index("SELECT"), input_tokens.index("FROM")
+                            cols = input_tokens[start_idx + 1:end_idx]
+                            if(len(cols) > 2 and (index != len(cols))) :
+                                new_token = 'list_n'
+                            elif (len(cols) > 2 and (index == len(cols))) :
+                                new_token = 'list_1'
+                            elif len(cols) < 2:
+                                new_token = 'list_1'
+                            else:
+                                new_token = 'list_1'
+                            prod = self._production(top, new_token)
+                            if prod[0]: 
+                                stack = prod[1]
+                            else:
+                                self.listaErrores[self.queries] = prod[1]
+                                break
                         else:
-                            new_token = 'list_1'
-                        prod = self._production(top, new_token)
-                        if prod[0]: 
-                            stack = prod[1]
-                        else:
-                            self.listaErrores[self.queries] = prod[1]
-                            break
+                            print('no hay FROM')
                     elif top in ('<lista_Columnas>'):
                         last_stack = stack
                         start_idx, end_idx = input_tokens.index("("), input_tokens.index(")")
