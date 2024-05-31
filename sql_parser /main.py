@@ -2,9 +2,11 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-from test import SQLParser
+from analizator import MetodosArchivo, SQLLexer, SQLParser
 
-objetoAbrir = SQLParser()
+objetoAbrir = MetodosArchivo()
+lex = SQLLexer()
+par = SQLParser()
 
 def insertarContenido():
     limpiarContenido()
@@ -25,12 +27,64 @@ def obtenerInfo():
 def analize_file():
     obtenerInfo()
     enumerar()
-    objetoAbrir.analizadorSintactico()
+    #objetoAbrir.analizadorSintactico()
+    lexico = lex.lexico(objetoAbrir.contenido)
     txtConvertirArchivo.delete("1.0", tk.END)
+    #txtConvertirArchivo.insert(tk.END, lexico)
+    insert_table_in_text(txtConvertirArchivo, lexico, 'lex')
     llenarTabla()
 
+def analizador_sint():
+    obtenerInfo()
+    enumerar()
+    parser = par.sintactico(objetoAbrir.contenido)
+    txtConvertirArchivo.delete("1.0", tk.END)
+    print(parser)
+    #txtConvertirArchivo.insert(tk.END, lexico)
+    insert_table_in_text(txtConvertirArchivo, parser, 'par' )
+    llenarTabla()
+
+def insert_table_in_text(widget, data, type):
+    # Crear tabla
+    if type == 'lex':
+        table_lex = ttk.Treeview(widget, columns=('Token', 'Tipo'), show='headings')
+        table_lex.heading('Token', text='Token')
+        table_lex.heading('Tipo', text='Tipo')
+        table_lex.column(0, width=400)
+        table_lex.column(1, width=400)
+        # Calcular el ancho máximo de cada columna
+        
+
+        # Agregar datos a la tabla
+        for key, value in data.items():
+            tokens = ', '.join([str(item['token']) for item in value])
+            types = ', '.join([item['type'] for item in value])
+            table_lex.insert('', 'end', values=(tokens, types))
+
+        # Colocar la tabla dentro del widget de texto
+        table_lex.place(x=0, y=0, width=40, height=500)
+        table_lex['height']=20
+        widget.window_create(tk.END, window=table_lex)
+    else:
+        table_lex = ttk.Treeview(widget, columns=('Tipo', 'Respuesta'), show='headings')
+        table_lex.heading('Tipo', text='Tipo')
+        table_lex.heading('Respuesta', text='Respuesta')
+        table_lex.column(0, width=400)
+        table_lex.column(1, width=400)
+
+        for diccionario in data:
+            for clave, valor in diccionario.items():
+                print(f"Clave: {clave}, Valor: {valor}")
+                table_lex.insert('', 'end', values=(clave, valor))
+
+        # Colocar la tabla dentro del widget de texto
+        table_lex.place(x=0, y=0, width=40, height=500)
+        table_lex['height']=20
+        widget.window_create(tk.END, window=table_lex)
+
+
 def EstadoExportar():
-    if objetoAbrir.listaErrores:
+    if par.listaErrores:
         subMenuTokens.entryconfig("Exportar", state="disabled")
     else:
         subMenuTokens.entryconfig("Exportar", state="normal")
@@ -64,7 +118,7 @@ def limpiarContenido():
     txtlineaNumerica.delete("1.0", tk.END)
     txtlineaNumerica2.delete("1.0", tk.END)
     objetoAbrir.limpiarVariables()
-    tabla.delete(*tabla.get_children())
+    #tabla.delete(*tabla.get_children())
 
 
 def enumerar():
@@ -84,11 +138,10 @@ def enumerar2():
     txtlineaNumerica2.config(state="disabled")
 
 def llenarTabla():
-    tabla.delete(*tabla.get_children())
-    print(objetoAbrir.listaErrores)
+    #tabla.delete(*tabla.get_children())
     for clave, valor in objetoAbrir.listaErrores.items():
-        print(valor)
-        tabla.insert("", "end", values=(clave,valor))
+        pass
+        #tabla.insert("", "end", values=(clave,valor))
     EstadoExportar()
     objetoAbrir.listaErrores = {}
 
@@ -103,9 +156,10 @@ def colorear_linea(numLinea):
     txtlineaNumerica2.tag_add("coloreada", f"{linea}.0", f"{linea}.end")
     
 def seleccionar_fila(event):
-    item = tabla.selection()[0]  #obtener el índice de la fila seleccionada
-    numero_linea, nombre_error = tabla.item(item, "values")
-    colorear_linea(numero_linea)
+    pass
+    #item = tabla.selection()[0]  #obtener el índice de la fila seleccionada
+    #numero_linea, nombre_error = tabla.item(item, "values")
+    #colorear_linea(numero_linea)
 
 
 
@@ -124,7 +178,8 @@ subMenuArchivo.add_command(label="Guardar como...", command=guardarComo)
 subMenuArchivo.add_command(label="Limpiar contenido", command=limpiarContenido)
 
 subMenuTokens = tk.Menu(barraMenu, tearoff=0)
-subMenuTokens.add_command(label="Analizador", command=analize_file)  
+subMenuTokens.add_command(label="Analizador Lexico", command=analize_file) 
+subMenuTokens.add_command(label="Analizador Sintactico", command=analizador_sint) 
 subMenuTokens.add_command(label="Exportar", command= exportarSQL ,state="disabled")
 
 subMenuSalir = tk.Menu(barraMenu, tearoff=0)
@@ -145,7 +200,7 @@ txtCargarArchivo.config(padx=10,pady=10)
 txtCargarArchivo.tag_configure("coloreada", background="yellow", foreground="black")
 
 
-txtConvertirArchivo = tk.Text(interfaz, wrap="none", width=80, height=26, font=("Century Gothic", 11),
+txtConvertirArchivo = tk.Text(interfaz, wrap="none", width=100, height=26, font=("Century Gothic", 11),
                             highlightthickness=1,highlightbackground="#7D8081",bd=0)
 txtConvertirArchivo.place(x= 693, y=10)
 txtConvertirArchivo.config(padx= 10,pady=10)
@@ -188,7 +243,7 @@ txtlineaNumerica2.config(yscrollcommand=sincroLinea2CargarLineaConvertir)
 
 
 #inicio de mi tabla
-tabla = ttk.Treeview(interfaz, columns=("Número de Línea", "Nombre de Error"))
+""" tabla = ttk.Treeview(interfaz, columns=("Número de Línea", "Nombre de Error"))
 tabla.bind("<<TreeviewSelect>>", seleccionar_fila)  # Asociar evento de selección
 tabla['height'] = 7
 
@@ -204,7 +259,9 @@ tabla.column("#1", width=200,anchor="center")
 tabla.column("#2", width=1145,anchor="w")
 
 
-tabla.place(x = 10,y=560)
+tabla.place(x = 10,y=560) """
+
+
 
 
 interfaz.mainloop()
