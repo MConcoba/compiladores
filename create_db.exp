@@ -1,0 +1,22 @@
+#!/usr/bin/expect
+
+set timeout -1
+
+# Abrir el archivo SQL para leer
+set sql_file [open "queries.sql"]
+set sql_queries [read $sql_file]
+close $sql_file
+
+# Iniciar sesión psql en el contenedor Docker
+spawn docker exec -it my-postgres psql -U mconcoba -d mydb
+expect "mydb=#"
+
+# Enviar cada línea del archivo SQL
+foreach line [split $sql_queries "\n"] {
+    send "$line\r"
+    expect "mydb=#"
+}
+
+# Salir de psql
+send "\\q\r"
+expect eof
