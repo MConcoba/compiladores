@@ -1,7 +1,6 @@
 import flet as ft
-from controllers.sqlparser import analizadorSintactico
-from controllers.lexer import lexico
-from controllers.parser import sintactico
+from controllers.sintactico import analized_parser
+from controllers.lexico import analized_lexer
 code = None
 codigo_archivo = None
 
@@ -26,13 +25,22 @@ def detalle_row(page, row, lex):
         value1 = ''
         value2 = ''
         if lex:
-            label1 = 'Tokens: \n'
-            value1 = row['tokens']
+            label1 = 'Consulta: \n'
+            value1 = row['query']
+            label2 = 'Tokens: \n'
+            txt = ''
+            for t in row['datos']:
+                token = t['token']
+                valor = t['valor'].ljust(20)
+                len_actual = len(token)
+                espacios =  '-' * (15 - len_actual)
+                txt += f"Token: {token}{espacios}Valor: {valor}{' ' * 150}  \n"
+            value2 = txt
         else:
-            label1 = 'Consulta: \n' if row['status'] else 'Nota: \n'
-            value1 = row['tipo']
+            label1 = 'Consulta: \n'
+            value1 = row['query']
             label2 = 'Respuesta: \n'
-            value2 = f"{row['tipo']} {row['datos']}"  if row['status'] else row['datos']
+            value2 = f"{row['datos']}"
 
         
         dlg_modal = ft.AlertDialog(
@@ -47,7 +55,7 @@ def detalle_row(page, row, lex):
                     ft.TextStyle(size=20, color=ft.colors.BLUE))]),
             ]),
         ], 
-        height=350, width=450))
+        height=550, width=550))
         page.dialog = dlg_modal
         dlg_modal.open = True
         page.update()
@@ -60,16 +68,16 @@ def analize(page, lex):
             page.remove(code)
             last = code.controls[0].controls[0].content.controls[0].value
             if lex :     
-                analized = lexico(last)
+                analized = analized_lexer(last)
             else:
-                analized = sintactico(last)     
+                analized = analized_parser(last)     
             
             code = show_code(page, last, analized, False, lex)
             #print(code)
             return code
 
 def lisata_c(lex):
-        columnas = ['No.', 'Tokens' ] if lex else ['Tipo', 'Respueta', 'Estado']
+        columnas = ['No.', 'Consulta', 'Tokens', 'Estado' ] if lex else ['No.', 'Tipo', 'Consulta', 'Respuesta', 'Estado']
         lista = []
         for c in columnas:
             col = ft.DataColumn(
@@ -82,16 +90,29 @@ def lista_r(page, datos, lex):
     lista = []
     if lex:
         for c in datos:
+            txt = ''
+            for t in c['datos']:
+                token = t['token']
+                valor = t['valor'].ljust(20)
+                len_actual = len(token)
+                espacios =  '-' * (15 - len_actual)
+                txt += f"Token: {token}{espacios}Valor: {valor}{' ' * 150}  \n"
+
+
             row = ft.DataRow([
+                    ft.DataCell(ft.Text(c['consulta'])),
                     ft.DataCell(ft.Text(c['query'])),
-                    ft.DataCell(ft.Text(str(c['tokens']))),
+                    ft.DataCell(ft.Text(txt)),
+                    ft.DataCell(ft.Text(str(c['status']))),
             ], color={"hovered": "BLUE50"},  on_select_changed=lambda e, value=c: detalle_row(page, value, lex))
             lista.append(row)
     else:
         print(datos)
         for c in datos:
             row = ft.DataRow([
+                    ft.DataCell(ft.Text(str(c['consulta']))),
                     ft.DataCell(ft.Text(str(c['tipo']))),
+                    ft.DataCell(ft.Text(str(c['query']))),
                     ft.DataCell(ft.Text(str(c['datos']))),
                     ft.DataCell(ft.Text(c['status']))
             ],  color="0x30FF0000" if c['status'] == False else {"hovered": "BLUE50"}, on_select_changed=lambda e, value=c: detalle_row(page, value, lex),)
