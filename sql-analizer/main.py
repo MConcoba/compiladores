@@ -2,7 +2,7 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-from analizator import MetodosArchivo
+from vista import MetodosArchivo
 from lexer import SQLLexer
 from parse import analized_parser
 
