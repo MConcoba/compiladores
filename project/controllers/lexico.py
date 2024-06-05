@@ -90,11 +90,30 @@ def lexer(sql_code):
                 position = match.end(0)
                 break
         if not match:
-            raise SyntaxError(f'Unexpected character: {sql_code[position]}')
+            raise SyntaxError(f'Valor invalido: {sql_code[position]}')
     return tokens
 
+
+def analized_lexer(consultas):
+    queries = consultas.replace('\n', '')
+    queries = str(queries).split(';')
+    results = []
+    for i, query in enumerate(queries, 1):
+        query = query.strip()
+        if query:
+            try:
+                tok = lexer(f"{query};")
+                one = []
+                for t in tok:
+                    l = {'token': t[0], 'valor': t[1]}
+                    one.append(l)
+                res = {'consulta': i, 'datos': one, 'query': f"{query};", 'status': True}
+            except SyntaxError as e:
+                res = {'consulta': i, 'datos': e, 'query': f"{query};", 'status': False}
+            results.append(res)
+    return results
+
 # Código SQL de ejemplo
-""" sql_code = "CREATEDATABASE mydb; CREATETABLE mytable (id INT); CREATEINDEX myindex ON mytable (id);"
-tokens = lexer(sql_code)
-print(tokens)
- """
+""" sql_code = "CREATEDATABASE mydb; CREATETABLE mytable (id INT); CREATEINDEX myindex ON mytable (id) [];"
+tokens = analized_lexer(sql_code)
+print(tokens) """

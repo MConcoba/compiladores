@@ -1,4 +1,4 @@
-from lexico import lexer, data_types
+from controllers.lexico import lexer, data_types
 
 current_token_index = 0
 tokens = []
@@ -16,7 +16,7 @@ def expect(expected_type):
             next_token()
             return token
         else:
-            raise SyntaxError(f': se encontró {expected_type}, se esperaba {token[0]}')
+            raise SyntaxError(f': se encontró {token[0]}, se esperaba {expected_type}')
 
 
 def parse_create():
@@ -478,9 +478,9 @@ def analized_parser(consultas):
             try:
                 tok = lexer(f"{query};")
                 parsed_query = parse(tok)
-                res = {'consulta': i, 'tipo': parsed_query['accion'], 'datos': parsed_query, 'status': True}
+                res = {'consulta': i, 'tipo': parsed_query['accion'], 'datos': parsed_query, 'query': f"{query};", 'status': True}
             except SyntaxError as e:
-                res = {'consulta': i, 'tipo': 'ERROR', 'datos': f"Error de sintaxis: {e}", 'status': False}
+                res = {'consulta': i, 'tipo': 'ERROR', 'query': f"{query};", 'datos': f"Error de sintaxis: {e}", 'status': False}
             results.append(res)
     return results
 
