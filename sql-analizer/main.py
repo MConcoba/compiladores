@@ -2,7 +2,8 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-from analizator import MetodosArchivo, SQLLexer, SQLParser
+from analizator import MetodosArchivo, SQLParser
+from lexer import  SQLLexer
 
 objetoAbrir = MetodosArchivo()
 lex = SQLLexer()
@@ -28,7 +29,7 @@ def analize_file():
     obtenerInfo()
     enumerar()
     #objetoAbrir.analizadorSintactico()
-    lexico = lex.lexico(objetoAbrir.contenido)
+    lexico = lex.analyze(objetoAbrir.contenido)
     txtConvertirArchivo.delete("1.0", tk.END)
     #txtConvertirArchivo.insert(tk.END, lexico)
     insert_table_in_text(txtConvertirArchivo, lexico, 'lex')

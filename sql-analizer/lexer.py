@@ -1,255 +1,132 @@
-import ply.lex as lex
+import re
 
-# Definición de tokens
-tokens = [
-    'SELECT', 'FROM', 'WHERE', 'ID', 'NUMBER', 'COMMA', 'EQUALS', 'INSERT', 'INTO', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'DATABASE', 'TABLE', 'INDEX','INT','VARCHAR', 'DATE', 'FLOAT', 'TEXT', 'BOOLEAN', 'LPAREN', 'RPAREN','SEMICOLON', 'STRING', 'VALUES', 'SET', 'ON','OR', 'AND', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'INTEGER', 'BIGINT', 'REAL', 'DOUBLE', 'DECIMAL','NUMERIC', 'TIME', 'DATETIME', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'PLUS','MINUS', 'TIMES', 'SIMPLEQUOTE', 'DOUBLEQUOTE', 'DIVIDE', 'NOT', 'LESSTHAN', 'GREATERTHAN', 'SERIAL', 'NOTNULL', 'NULL', 'AUTO_INCREMENT', 'PRIMARYKEY', "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "POINT", 'COMPARISON'
-    ]
+class SQLLexer:
+    def __init__(self):
+        # Lista de palabras clave y tipos de datos
+        self.keywords = [
+            'ADD', 'ALL', 'ALTER', 'AND', 'ANY', 'AS', 'ASC', 'BACKUP', 'BETWEEN', 'CASE', 'CHECK', 'COLUMN', 'CONSTRAINT',
+            'CREATE', 'DATABASE', 'DEFAULT', 'DELETE', 'DESC', 'DISTINCT', 'DROP', 'EXEC', 'EXISTS', 'FOREIGN', 'FROM', 'FULL',
+            'GROUP', 'HAVING', 'IN', 'INDEX', 'INNER', 'INSERT', 'INTO', 'IS', 'JOIN', 'KEY', 'LEFT', 'LIKE', 'LIMIT', 'NOT', 'NOTNULL',
+            'NULL', 'ON', 'OR', 'ORDER', 'OUTER', 'PRIMARY', 'PROCEDURE', 'RIGHT', 'ROWNUM', 'SELECT', 'SET', 'TABLE', 'TOP',
+            'TRUNCATE', 'UNION', 'UNIQUE', 'UPDATE', 'VALUES', 'VIEW', 'WHERE', 'INNERJOIN', 'LEFTJOIN', 'RIGHTJOIN', 'ORDERBY',
+            'PRIMARYKEY'
+        ]
 
+        self.data_types = [
+            'INT', 'VARCHAR', 'DATE', 'FLOAT', 'TEXT', 'BOOLEAN', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'INTEGER', 'BIGINT',
+            'REAL', 'DOUBLE', 'DECIMAL', 'NUMERIC', 'TIME', 'DATETIME', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'TIMES',
+            'MINUS', 'SERIAL'
+        ]
 
-# Expresiones regulares para tokens
-t_COMMA = r','
-t_POINT = r'\.'
-t_EQUALS = r'='
-t_PLUS = r'\+'
-t_MINUS = r'-'
-t_TIMES = r'\*'
-t_DIVIDE = r'/'
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
-t_SEMICOLON = r';'
-t_DOUBLEQUOTE = r'"'
-t_SIMPLEQUOTE = r'\''
-t_GREATERTHAN = r'\>'
-t_LESSTHAN = r'\<'
+        # Crear los patrones de tokens para el lexer
+        self.token_patterns = []
 
+        # Añadir las palabras clave a los patrones de tokens
+        for keyword in self.keywords:
+            self.token_patterns.append((keyword, r'\b' + keyword + r'\b'))
 
-def t_CREATE(t):
-    r'CREATE'
-    return t
+        # Añadir los tipos de datos a los patrones de tokens
+        for data_type in self.data_types:
+            self.token_patterns.append((data_type, r'\b' + data_type + r'\b'))
 
-def t_DATABASE(t):
-    r'DATABASE'
-    return t
+        # Añadir otros tokens necesarios
+        self.token_patterns.extend([
+            ('IDENTIFIER', r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'),
+            ('NUMBER', r'\b\d+\b'),
+            ('STRING', r'\'[^\']*\'|\"[^\"]*\"'),
+            ('COMMA', r','),
+            ('DOT', r'\.'),
+            ('SEMICOLON', r';'),
+            ('EQUALS', r'='),
+            ('NOT_EQUALS', r'!='),
+            ('LESS_THAN', r'<'),
+            ('LESS_THAN_EQUALS', r'<='),
+            ('GREATER_THAN', r'>'),
+            ('GREATER_THAN_EQUALS', r'>='),
+            ('AND', r'\bAND\b'),
+            ('OR', r'\bOR\b'),
+            ('NOT', r'\bNOT\b'),
+            ('IS', r'\bIS\b'),
+            ('NULL', r'\bNULL\b'),
+            ('LPAREN', r'\('),
+            ('RPAREN', r'\)'),
+            ('WHITESPACE', r'\s+'),
+            ('PLUS', r'\+'),
+            ('MINUS', r'-'),
+            ('MULTIPLY', r'\*'),
+            ('DIVIDE', r'/'),
+        ])
 
-def t_INDEX(t):
-    r'INDEX'
-    return t
+    def lexer(self, sql_code):
+        tokens = []
+        position = 0
+        while position < len(sql_code):
+            match = None
+            for token_type, pattern in self.token_patterns:
+                regex = re.compile(pattern)
+                match = regex.match(sql_code, position)
+                if match:
+                    text = match.group(0)
+                    if token_type != 'WHITESPACE':  # Ignorar espacios en blanco
+                        # Manejo especial para CREATEDATABASE
+                        if token_type == 'IDENTIFIER' and text.upper() == 'CREATEDATABASE':
+                            tokens.append(('CREATE', 'CREATE'))
+                            tokens.append(('DATABASE', 'DATABASE'))
+                        elif token_type == 'IDENTIFIER' and text.upper() == 'CREATETABLE':
+                            tokens.append(('CREATE', 'CREATE'))
+                            tokens.append(('TABLE', 'TABLE'))
+                        elif token_type == 'IDENTIFIER' and text.upper() == 'CREATEINDEX':
+                            tokens.append(('CREATE', 'CREATE'))
+                            tokens.append(('INDEX', 'INDEX'))
+                        elif token_type == 'IDENTIFIER' and text.upper() == 'INSERTINTO':
+                            tokens.append(('INSERT', 'INSERT'))
+                            tokens.append(('INTO', 'INTO'))
+                        elif token_type == 'IDENTIFIER' and text.upper() == 'DELETEFROM':
+                            tokens.append(('DELETE', 'DELETE'))
+                            tokens.append(('FROM', 'FROM'))
+                        else:
+                            tokens.append((token_type, text))
+                    position = match.end(0)
+                    break
+            if not match:
+                raise SyntaxError(f'Valor invalido: {sql_code[position]}')
+        return tokens
 
-def t_TABLE(t):
-    r'TABLE'
-    return t
+    def analyze(self, consultas):
+        queries = consultas.replace('\n', '')
+        queries = str(queries).split(';')
+        results = []
+        res = {}
+        for i, query in enumerate(queries, 1):
+            query = query.strip()
+            if query:
+                if i not in res:
+                    res[i] = []
+                try:
+                    tok = self.lexer(f"{query};")
+                    tokens = []
+                    types = []
+                    list_d = []
+                    for t in tok:
+                        tokens.append(t[1])
+                        types.append(t[0])
+                        list_d.append({'token': t[1], 'type': t[0]})
+                    res[i] = (list_d)
 
-def t_SELECT(t):
-    r'SELECT'
-    return t
+                except SyntaxError as e:
+                    res[i].append({'token': tokens, 'type': types})
+                results.append(res)
+        return res
 
-def t_FROM(t):
-    r'FROM'
-    return t
-
-def t_WHERE(t):
-    r'WHERE'
-    return t
-
-def t_INSERT(t):
-    r'INSERT'
-    return t
-
-def t_INTO(t):
-    r'INTO'
-    return t
-
-def t_VALUES(t):
-    r'VALUES'
-    return t
-
-def t_UPDATE(t):
-    r'UPDATE'
-    return t
-
-def t_SET(t):
-    r'SET'
-    return t
-
-def t_DELETE(t):
-    r'DELETE'
-    return t
-
-def t_DROP(t):
-    r'DROP'
-    return t
-
-def t_ASC(t):
-    r'ASC'
-    return t
-
-def t_DESC(t):
-    r'DESC'
-    return t
-
-def t_EXISTS(t):
-    r'EXISTS'
-    return t
-
-def t_NOTNULL(t):
-    r'NOTNULL'
-    return t
-
-def t_NULL(t):
-    r'NULL'
-    return t
-
-def t_AUTOI_NCREMENT(t):
-    r'AUTO_INCREMENT'
-    return t
-
-def t_PRIMARYKEY(t):
-    r'PRIMARYKEY'
-    return t
-
-def t_PRIMARY(t):
-    r'PRIMARY'
-    return t
-
-def t_ORDERBY(t):
-    r'ORDERBY'
-    return t
-
-def t_GROUPBY(t):
-    r'GROUPBY'
-    return t
-
-def t_AND(t):
-    r'AND'
-    return t
-
-def t_OR(t):
-    r'OR'
-    return t
-
-def t_NOT(t):
-    r'NOT'
-    return t
-
-def t_ISNULL(t):
-    r'ISNULL'
-    return t
-
-def t_ISNOTNULL(t):
-    r'ISNOTNULL'
-    return t
-
-def t_INT(t):
-    r'INT'
-    return t
-
-def t_VARCHAR(t):
-    r'VARCHAR'
-    return t
-
-def t_DECIMAL(t):
-    r'DECIMAL'
-    return t
-
-def t_ON(t):
-    r'ON'
-    return t
-
-def t_JOIN(t):
-    r'JOIN'
-    return t
-
-def t_INNER(t):
-    r'INNER'
-    return t
-
-def t_LEFT(t):
-    r'LEFT'
-    return t
-
-def t_RIGHT(t):
-    r'RIGHT'
-    return t
-
-def t_FULL(t):
-    r'FULL'
-    return t
-
-def t_OUTER(t):
-    r'OUTER'
-    return t
-
-
-def t_ID(t):
-    r'[a-zA-Z_][a-zA-Z0-9_]*'
-    return t
-
-def t_NUMBER(t):
-    r'\d+'
-    t.value = int(t.value)  # Convertir el valor a entero
-    return t
-
-def t_COMPARISON(t):
-    r'==|<=|>=|<|>|!='
-    return t
-
-# Ignorar espacios en blanco y saltos de línea
-t_ignore = ' \t\n'
-
-# Definición de errores
-def t_error(t):
-    print(f"Illegal character '{t.value[0]}'")
-    t.lexer.skip(1)
-
-# Construcción del analizador léxico
-lexer = lex.lex()
-
-
-
-# Función para tokenizar una cadena de entrada
-def tokenizsdfe(input_string):
-    lexer.input(input_string)
-    tokens = []
-    while True:
-        tok = lexer.token()
-        if not tok:
-            break
-        tokens.append(tok)
-    return tokens
-
-def tokenize(input_string):
-    lexer.input(input_string)
-    tokens = []
-    line_number = 1  # Inicializamos el número de línea en 1
-    current_position = 0  # Inicializamos la posición actual en 0
-    for tok in lexer:
-        if tok.lexpos > current_position:
-            line_number += input_string[current_position:tok.lexpos].count('\n')
-        # Actualizamos la posición actual con la posición del token
-        current_position = tok.lexpos
-        tok.lineno = line_number  # Asignamos el número de línea al token
-        tokens.append(tok)
-    return tokens
-
-def lexico(constulas):
-    datos = []
-    tokens = tokenize(script_sql)
-    for token in tokens:
-        datos.append(token)
-
-
-script_sql = """
-DROPDATABASE IF EXISTS ejemplo3;
-CREATEDATABASE ejemplo3;
-CREATETABLE ejemplo_table (id SERIAL PRIMARY KEY, nombre VARCHAR(50));
-INSERTINTO ejemplo_table (nombre) VALUES ('Ejemplo 1');
-SELECT * FROM ejemplo_table;
-
-
+# Ejemplo de uso
+sql_queries = """
+CREATE DATABASE TestDB;
+CREATE TABLE TestTable (ID INT, Name VARCHAR(255));
+INSERT INTO TestTable (ID, Name) VALUES (1, 'John Doe');
+SELECT * FROM TestTable;
 """
 
-""" tokens = tokenize(script_sql)
-for token in tokens:
-    print(token) """
-
-
+""" lexer = SQLLexer()
+results = lexer.analyze(sql_queries)
+print(results)
+ """
