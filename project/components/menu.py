@@ -19,6 +19,15 @@ def menu(page: ft.Page):
     def result(e):
        result = analize(page)
        page.add(result)
+
+    def lex(e):
+        result = analize(page, True)
+        page.add(result)
+
+    def par(e):
+        result = analize(page, False)
+        page.add(result)
+
     
     
     def save_file_result(e: ft.FilePickerResultEvent):
@@ -32,18 +41,20 @@ def menu(page: ft.Page):
 
 
     menu =  ft.AppBar(
-        leading=ft.Icon(ft.icons.CODE),
-        leading_width=70,
+        leading=ft.Icon(ft.icons.CODE, size=50),
+        leading_width=100,
         title=ft.Text("Analizador Lexico"),
         center_title=False,
         bgcolor=ft.colors.SURFACE_VARIANT,
-        elevation=100,
+        elevation=10,
+        toolbar_height=70,
         actions=[
-            ft.PopupMenuButton(
+            ft.PopupMenuButton( 
                 icon=ft.icons.FOLDER_ROUNDED,
-                 tooltip='Archivo',
+                tooltip='Archivo',
+                scale=2,
                 items=[
-                    ft.PopupMenuItem(icon=ft.icons.FILE_OPEN_ROUNDED, text="Abrir   Ctrl+O", 
+                    ft.PopupMenuItem(icon=ft.icons.FILE_OPEN_ROUNDED ,text="Abrir   Ctrl+O", 
                     on_click=lambda _: pick_files_dialog.pick_files( initial_directory=ruta_actual, allowed_extensions=["txt"], allow_multiple=False
                     ),),
                     ft.PopupMenuItem(icon=ft.icons.SAVE_ROUNDED, text="Exportar (.sql)", on_click=lambda _: save_file_dialog.save_file( 
@@ -51,13 +62,20 @@ def menu(page: ft.Page):
                     ),),
                 ], 
             ),
+            ft.Container(width=50, height=150),
             ft.PopupMenuButton(
                 icon=ft.icons.GENERATING_TOKENS_ROUNDED,
                  tooltip='Tokens',
+                 scale=2,
+                 width=50,
+
                 items=[
-                    ft.PopupMenuItem(icon=ft.icons.PLAY_CIRCLE_ROUNDED, text="Analizar   Ctrl+T", on_click=result),
+                    ft.PopupMenuItem(icon=ft.icons.PLAY_CIRCLE_ROUNDED, text="Lexer  Ctrl+L", on_click=lex),
+                    ft.PopupMenuItem(icon=ft.icons.PLAY_CIRCLE_ROUNDED, text="Parser  Ctrl+P", on_click=par),
                 ],
             ),
+            ft.Container(width=50, height=150),
+
         ],
     )
     return [menu, pick_files_dialog, save_file_dialog]
