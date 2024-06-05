@@ -2,12 +2,13 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-from analizator import MetodosArchivo, SQLParser
-from lexer import  SQLLexer
+from analizator import MetodosArchivo
+from lexer import SQLLexer
+from parse import analized_parser
 
 objetoAbrir = MetodosArchivo()
 lex = SQLLexer()
-par = SQLParser()
+
 
 def insertarContenido():
     limpiarContenido()
@@ -38,9 +39,8 @@ def analize_file():
 def analizador_sint():
     obtenerInfo()
     enumerar()
-    parser = par.sintactico(objetoAbrir.contenido)
+    parser = analized_parser(objetoAbrir.contenido)
     txtConvertirArchivo.delete("1.0", tk.END)
-    print(parser)
     #txtConvertirArchivo.insert(tk.END, lexico)
     insert_table_in_text(txtConvertirArchivo, parser, 'par' )
     llenarTabla()
@@ -74,9 +74,10 @@ def insert_table_in_text(widget, data, type):
         table_lex.column(1, width=400)
 
         for diccionario in data:
-            for clave, valor in diccionario.items():
-                print(f"Clave: {clave}, Valor: {valor}")
-                table_lex.insert('', 'end', values=(clave, valor))
+            print(diccionario)
+            #for clave, valor in diccionario.items():
+                #print(f"Clave: {clave}, Valor: {valor}")
+            table_lex.insert('', 'end', values=(diccionario['tipo'], diccionario['respuesta']))
 
         # Colocar la tabla dentro del widget de texto
         table_lex.place(x=0, y=0, width=40, height=500)
@@ -85,7 +86,7 @@ def insert_table_in_text(widget, data, type):
 
 
 def EstadoExportar():
-    if par.listaErrores:
+    if False:
         subMenuTokens.entryconfig("Exportar", state="disabled")
     else:
         subMenuTokens.entryconfig("Exportar", state="normal")
